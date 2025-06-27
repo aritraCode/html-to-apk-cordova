@@ -1,0 +1,15 @@
+{
+  "name": "io.bot.aichat",
+  "displayName": "HTML-to-APK",
+  "version": "1.0.0",
+  "description": "Sample Apache Cordova App",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ecosystem:cordova"
+  ],
+  "author": "Aritracodes",
+  "license": "none"
+}
