@@ -1,4 +1,4 @@
-name: Build Cordova APK
+name: Build APK (AiChatBot)
 
 on:
   workflow_dispatch:
