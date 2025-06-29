@@ -37,9 +37,6 @@ jobs:
     - name: Add Cordova TTS plugin
       run: cordova plugin add cordova-plugin-tts
 
-    - name: Add Cordova Whitelist plugin
-      run: cordova plugin add cordova-plugin-whitelist
-
     - name: Build APK
       run: cordova build android
 
