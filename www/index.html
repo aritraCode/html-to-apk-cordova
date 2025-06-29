@@ -9,7 +9,7 @@
     body { font-family: Arial; padding: 20px; }
     textarea { width: 100%; height: 100px; }
     button { margin-top: 10px; padding: 10px 20px; font-size: 16px; }
-    #message { margin-top: 15px; font-weight: bold; color: green; }
+    #message { margin-top: 15px; font-weight: bold; color: red; }
     #error { margin-top: 10px; color: red; font-weight: bold; }
   </style>
 </head>
@@ -18,7 +18,7 @@
   <textarea id="textInput" placeholder="Type text here..."></textarea><br>
   <button id="speakBtn">Speak</button>
 
-  <div id="message"></div>
+  <div id="message">not ready yet!</div>
   <div id="error"></div>
 
   <script>
@@ -26,6 +26,7 @@
 
     function onDeviceReady() {
       showMessage("App is ready.");
+      document.getElementById("message").style.color = "green"
       document.getElementById('speakBtn').addEventListener('click', speak);
     }
 
