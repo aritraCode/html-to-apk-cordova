@@ -1,5 +1,5 @@
 <?xml version='1.0.0' encoding='utf-8'?>
-<widget id="io.tts" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+<widget id="io.example.tts" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <name>TextToSpeech</name>
     <description>Sample Apache Cordova App for Ai chat Bot on the go.</description>
     <author email="random.mail.org" href="https://random.domain.org">
