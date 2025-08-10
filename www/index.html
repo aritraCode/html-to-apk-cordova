@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal Notes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0c0c0c;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            height: 100vh;
+            overflow: hidden;
+            font-size: 14px;
+        }
+
+        .terminal {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+        }
+
+        .header {
+            border-bottom: 1px solid #00ff00;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+
+        .title {
+            color: #00ff00;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .subtitle {
+            color: #808080;
+            font-size: 12px;
+        }
+
+        .output {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            padding-right: 5px;
+        }
+
+        .output::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .output::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        .output::-webkit-scrollbar-thumb {
+            background: #00ff00;
+            border-radius: 3px;
+        }
+
+        .line {
+            margin-bottom: 5px;
+            word-wrap: break-word;
+        }
+
+        .prompt {
+            color: #00ff00;
+        }
+
+        .error {
+            color: #ff6b6b;
+        }
+
+        .success {
+            color: #51cf66;
+        }
+
+        .info {
+            color: #74c0fc;
+        }
+
+        .note-header {
+            color: #ffd43b;
+            border-bottom: 1px solid #ffd43b;
+            margin: 10px 0 5px 0;
+            padding-bottom: 2px;
+        }
+
+        .note-content {
+            background: #1a1a1a;
+            border-left: 3px solid #00ff00;
+            padding: 8px;
+            margin: 5px 0 15px 0;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            border-radius: 3px;
+        }
+
+        .input-container {
+            display: flex;
+            align-items: center;
+            border-top: 1px solid #333;
+            padding-top: 8px;
+            background: #0c0c0c;
+        }
+
+        .input-prompt {
+            color: #00ff00;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        .command-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .command-input::placeholder {
+            color: #666;
+        }
+
+        .cursor {
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        pre, code {
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .help-section {
+            margin: 10px 0;
+        }
+
+        .help-command {
+            color: #ffd43b;
+            font-weight: bold;
+        }
+
+        .help-desc {
+            color: #ccc;
+            margin-left: 20px;
+            margin-bottom: 5px;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            body {
+                font-size: 12px;
+            }
+            
+            .terminal {
+                padding: 8px;
+            }
+            
+            .command-input {
+                font-size: 16px; /* Prevents zoom on iOS */
+                -webkit-appearance: none;
+            }
+            
+            .note-content {
+                font-size: 12px;
+                padding: 6px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .terminal {
+                padding: 5px;
+            }
+            
+            .title {
+                font-size: 14px;
+            }
+            
+            .subtitle {
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <div class="header">
+            <div class="title">TERMINAL NOTES v1.0</div>
+            <div class="subtitle">Type 'help' for available commands</div>
+        </div>
+        
+        <div class="output" id="output">
+            <div class="line info">Terminal Notes initialized. Ready for commands.</div>
+        </div>
+        
+        <div class="input-container">
+            <span class="input-prompt">notes@terminal:~$</span>
+            <input type="text" id="commandInput" class="command-input" placeholder="Enter command..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+            <span class="cursor">█</span>
+        </div>
+    </div>
+
+    <script>
+        class TerminalNotes {
+            constructor() {
+                this.notes = this.loadNotes();
+                this.commandHistory = [];
+                this.historyIndex = -1;
+                this.multilineMode = false;
+                this.currentNote = [];
+                
+                this.output = document.getElementById('output');
+                this.input = document.getElementById('commandInput');
+                
+                this.setupEventListeners();
+                this.focusInput();
+            }
+
+            setupEventListeners() {
+                this.input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        this.handleCommand();
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        this.navigateHistory(-1);
+                    } else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        this.navigateHistory(1);
+                    }
+                });
+
+                // Keep input focused on mobile
+                document.addEventListener('touchstart', () => {
+                    setTimeout(() => this.focusInput(), 100);
+                });
+
+                // Auto-focus when clicking anywhere
+                document.addEventListener('click', () => {
+                    this.focusInput();
+                });
+            }
+
+            focusInput() {
+                this.input.focus();
+            }
+
+            handleCommand() {
+                const command = this.input.value.trim();
+                
+                if (!command && !this.multilineMode) {
+                    this.input.value = '';
+                    return;
+                }
+
+                // Show the command in output
+                if (!this.multilineMode) {
+                    this.addOutput(`<span class="prompt">notes@terminal:~$ ${command}</span>`);
+                    this.commandHistory.push(command);
+                    this.historyIndex = -1;
+                }
+
+                this.executeCommand(command);
+                this.input.value = '';
+                this.scrollToBottom();
+            }
+
+            executeCommand(command) {
+                if (this.multilineMode) {
+                    if (command === '.') {
+                        this.finishNote();
+                        return;
+                    }
+                    this.currentNote.push(command);
+                    this.addOutput(command);
+                    return;
+                }
+
+                const parts = command.split(' ');
+                const cmd = parts[0].toLowerCase();
+                const args = parts.slice(1).join(' ');
+
+                switch (cmd) {
+                    case 'help':
+                        this.showHelp();
+                        break;
+                    case 'new':
+                    case 'create':
+                        this.startNewNote(args);
+                        break;
+                    case 'list':
+                    case 'ls':
+                        this.listNotes();
+                        break;
+                    case 'view':
+                    case 'cat':
+                        this.viewNote(args);
+                        break;
+                    case 'delete':
+                    case 'rm':
+                        this.deleteNote(args);
+                        break;
+                    case 'clear':
+                        this.clearScreen();
+                        break;
+                    case 'count':
+                        this.showCount();
+                        break;
+                    default:
+                        this.addOutput(`<span class="error">Command not found: ${cmd}</span>`);
+                        this.addOutput(`<span class="info">Type 'help' for available commands</span>`);
+                }
+            }
+
+            showHelp() {
+                this.addOutput(`<div class="help-section">
+                    <div class="help-command">Available Commands:</div>
+                    <div class="help-desc">new [title] - Start creating a new note</div>
+                    <div class="help-desc">list/ls - Show all notes</div>
+                    <div class="help-desc">view/cat [number] - Display a specific note</div>
+                    <div class="help-desc">delete/rm [number] - Delete a note</div>
+                    <div class="help-desc">count - Show total number of notes</div>
+                    <div class="help-desc">clear - Clear the screen</div>
+                    <div class="help-desc">help - Show this help message</div>
+                    <br>
+                    <div class="info">Note Creation:</div>
+                    <div class="help-desc">After 'new', type your note content line by line</div>
+                    <div class="help-desc">Type '.' on a new line to finish the note</div>
+                </div>`);
+            }
+
+            startNewNote(title) {
+                if (!title) {
+                    this.addOutput(`<span class="error">Usage: new [title]</span>`);
+                    return;
+                }
+                
+                this.multilineMode = true;
+                this.currentNote = [];
+                this.currentNoteTitle = title;
+                this.addOutput(`<span class="success">Starting new note: "${title}"</span>`);
+                this.addOutput(`<span class="info">Enter note content (type '.' on a new line to finish):</span>`);
+                this.updatePrompt();
+            }
+
+            finishNote() {
+                const note = {
+                    id: Date.now(),
+                    title: this.currentNoteTitle,
+                    content: this.currentNote.join('\n'),
+                    created: new Date().toLocaleString()
+                };
+
+                this.notes.push(note);
+                this.saveNotes();
+                
+                this.addOutput(`<span class="success">Note "${note.title}" created successfully! (ID: ${this.notes.length})</span>`);
+                
+                this.multilineMode = false;
+                this.currentNote = [];
+                this.currentNoteTitle = '';
+                this.updatePrompt();
+            }
+
+            listNotes() {
+                if (this.notes.length === 0) {
+                    this.addOutput(`<span class="info">No notes found. Use 'new [title]' to create a note.</span>`);
+                    return;
+                }
+
+                this.addOutput(`<span class="success">Notes List (${this.notes.length} total):</span>`);
+                this.notes.forEach((note, index) => {
+                    const preview = note.content.substring(0, 50) + (note.content.length > 50 ? '...' : '');
+                    this.addOutput(`<span class="info">[${index + 1}] ${note.title}</span>`);
+                    this.addOutput(`    Created: ${note.created}`);
+                    this.addOutput(`    Preview: ${preview || '(empty)'}`);
+                });
+            }
+
+            viewNote(indexStr) {
+                const index = parseInt(indexStr) - 1;
+                
+                if (!indexStr) {
+                    this.addOutput(`<span class="error">Usage: view [note_number]</span>`);
+                    return;
+                }
+                
+                if (isNaN(index) || index < 0 || index >= this.notes.length) {
+                    this.addOutput(`<span class="error">Invalid note number. Use 'list' to see available notes.</span>`);
+                    return;
+                }
+
+                const note = this.notes[index];
+                this.addOutput(`<div class="note-header">[${index + 1}] ${note.title} - ${note.created}</div>`);
+                this.addOutput(`<pre class="note-content"><code>${note.content || '(empty note)'}</code></pre>`);
+            }
+
+            deleteNote(indexStr) {
+                const index = parseInt(indexStr) - 1;
+                
+                if (!indexStr) {
+                    this.addOutput(`<span class="error">Usage: delete [note_number]</span>`);
+                    return;
+                }
+                
+                if (isNaN(index) || index < 0 || index >= this.notes.length) {
+                    this.addOutput(`<span class="error">Invalid note number. Use 'list' to see available notes.</span>`);
+                    return;
+                }
+
+                const note = this.notes[index];
+                this.notes.splice(index, 1);
+                this.saveNotes();
+                
+                this.addOutput(`<span class="success">Deleted note: "${note.title}"</span>`);
+            }
+
+            showCount() {
+                this.addOutput(`<span class="info">Total notes: ${this.notes.length}</span>`);
+            }
+
+            clearScreen() {
+                this.output.innerHTML = '<div class="line info">Screen cleared.</div>';
+            }
+
+            updatePrompt() {
+                const prompt = document.querySelector('.input-prompt');
+                if (this.multilineMode) {
+                    prompt.textContent = '> ';
+                } else {
+                    prompt.textContent = 'notes@terminal:~$';
+                }
+            }
+
+            navigateHistory(direction) {
+                if (this.commandHistory.length === 0) return;
+
+                if (direction === -1) { // Up
+                    if (this.historyIndex === -1) {
+                        this.historyIndex = this.commandHistory.length - 1;
+                    } else if (this.historyIndex > 0) {
+                        this.historyIndex--;
+                    }
+                } else { // Down
+                    if (this.historyIndex === -1) return;
+                    if (this.historyIndex < this.commandHistory.length - 1) {
+                        this.historyIndex++;
+                    } else {
+                        this.historyIndex = -1;
+                        this.input.value = '';
+                        return;
+                    }
+                }
+
+                this.input.value = this.commandHistory[this.historyIndex];
+            }
+
+            addOutput(html) {
+                const div = document.createElement('div');
+                div.className = 'line';
+                div.innerHTML = html;
+                this.output.appendChild(div);
+            }
+
+            scrollToBottom() {
+                this.output.scrollTop = this.output.scrollHeight;
+            }
+
+            saveNotes() {
+                const notesData = JSON.stringify(this.notes);
+                // Using a simple in-memory storage since localStorage is not available
+                this.persistentNotes = notesData;
+            }
+
+            loadNotes() {
+                // Return empty array since we can't use localStorage
+                return [];
+            }
+        }
+
+        // Initialize the app when page loads
+        window.addEventListener('load', () => {
+            new TerminalNotes();
+        });
+    </script>
+</body>
+</html>
