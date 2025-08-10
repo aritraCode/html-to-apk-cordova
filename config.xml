@@ -1,6 +1,6 @@
 <?xml version='1.0.0' encoding='utf-8'?>
-<widget id="io.example.groqApp" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
-    <name>GroqAIs</name>
+<widget id="io.example.terminalnote" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>TerminalNote</name>
     <description>Sample Apache Cordova App for Ai Bot on the go.</description>
     <author email="random.mail.org" href="https://random.domain.org">
         Aritracode.
