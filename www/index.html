@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Message Client</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <style>
+    :root {
+      --bg-color: #0d1117;
+      --card-bg: #161b22;
+      --border-color: #30363d;
+      --text-main: #c9d1d9;
+      --text-muted: #8b949e;
+      --accent: #58a6ff;
+      --danger: #f85149;
+      --input-bg: #010409;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 500px; /* Perfect for mobile and narrow desktop */
+    }
+
+    /* Header & Key Input */
+    .head {
+      position: sticky;
+      top: 0;
+      background-color: var(--bg-color);
+      z-index: 100;
+      padding: 10px 0 20px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    input {
+      flex: 1;
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      color: white;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+    }
+
+    .btn {
+      padding: 12px 18px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--card-bg);
+      color: var(--text-main);
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+    }
+
+    .btn:active {
+      opacity: 0.7;
+    }
+
+    /* Message List */
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      width: 100%;
+    }
+
+    li {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Markdown Styling */
+    .markdown-content {
+      font-size: 15px;
+      line-height: 1.6;
+      word-break: break-word;
+    }
+
+    .markdown-content p { margin: 0 0 12px 0; }
+    .markdown-content p:last-child { margin-bottom: 0; }
+    .markdown-content code {
+      background: rgba(110, 118, 129, 0.4);
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 85%;
+    }
+
+    .delete-btn {
+      margin-top: 15px;
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid var(--danger);
+      padding: 8px 12px;
+      border-radius: 6px;
+      width: 100%; /* Full width button for easier thumb tapping */
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .delete-btn:active {
+      background: var(--danger);
+      color: white;
+    }
+
+    .status-msg {
+      text-align: center;
+      color: var(--text-muted);
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <div class="head">
+      <div class="input-group">
+        <input type="password" id="taapidemo_key" autocomplete="off" placeholder="TAAPIDEMO_KEY">
+        <button class="btn btn-primary" onclick="saveKey()">Save</button>
+      </div>
+      <button class="btn" style="width: 100%;" onclick="fetchMessages()">↻ Refresh Feed</button>
+    </div>
+    
+    <ul id="output"></ul>
+  </div>
+
+  <script>
+    // Markdown Configuration
+    marked.setOptions({
+      breaks: true,
+      gfm: true
+    });
+
+    const output = document.getElementById("output");
+
+    const saveKey = () => {
+      const key = document.getElementById("taapidemo_key").value;
+      if (!key.trim()) return;
+      localStorage.setItem("TAAPIDEMO_KEY", key);
+      alert("Key Saved!");
+    };
+
+    const fetchMessages = () => {
+      const key = localStorage.getItem("TAAPIDEMO_KEY");
+      if (!key) {
+        alert("'TAAPIDEMO_KEY' is not set!");
+        return;
+      }
+
+      output.innerHTML = '<div class="status-msg">Loading messages...</div>';
+
+      fetch("https://taapidemo.pythonanywhere.com/db/my-mail-messages", {
+        method: "GET",
+        headers: { "Authorization": key },
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (!data.ok || !Array.isArray(data.result)) {
+          output.innerHTML = '<div class="status-msg">Error: Invalid response format</div>';
+          return;
+        }
+
+        if (data.result.length === 0) {
+          output.innerHTML = '<div class="status-msg">No messages found.</div>';
+          return;
+        }
+
+        output.innerHTML = "";
+        data.result.forEach(item => {
+          const li = document.createElement("li");
+          const rawMsg = item.data?.msg || "*No content*";
+          const msgHTML = marked.parse(rawMsg);
+
+          li.innerHTML = `
+            <div class="markdown-content">${msgHTML}</div>
+            <button class="delete-btn" onclick="deleteMsg('${item.id}')">Delete</button>
+          `;
+          output.appendChild(li);
+        });
+      })
+      .catch(error => {
+        console.error("Error:", error);
+        output.innerHTML = '<div class="status-msg">Failed to connect to server.</div>';
+      });
+    };
+
+    const deleteMsg = (id) => {
+      const key = localStorage.getItem("TAAPIDEMO_KEY");
+      if (!confirm("Delete this message?")) return;
+
+      fetch(`https://taapidemo.pythonanywhere.com/db/my-mail-messages/${id}`, {
+        method: "DELETE",
+        headers: { "Authorization": key },
+      })
+      .then(() => fetchMessages())
+      .catch(error => console.error("Error:", error));
+    };
+
+    window.onload = () => {
+      const saved = localStorage.getItem("TAAPIDEMO_KEY");
+      if (saved) {
+        document.getElementById("taapidemo_key").value = saved;
+        fetchMessages();
+      }
+    };
+  </script>
+
+</body>
+</html>
